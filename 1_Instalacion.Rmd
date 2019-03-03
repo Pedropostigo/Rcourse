@@ -5,20 +5,22 @@ output: html_notebook
 
 ## 1.1 Instalación de R
 
+El primer paso para trabajar en R es ... instalarlo. Para ello, visitad el siguiente enlace web y descargar la última versión de R (en caso de usar Windows):
+
+https://cran.r-project.org/bin/windows/base/
+
 ## 1.2 Instalación de R Studio
 
 ## 1.3 Recursos on-line
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+Aunque el objetivo de este curso es proporcionar las herramientas necesarias para poder utilizar R y realizar modelos, sería imposible incluir con detalle todas las particularidades de R o todas las incidencias/dudas que pueden surgir mientras se realizan modelos. Por ello, se presentan a continuación recursos on-line vitales para solucionar estas incidencias y seguir aprendiendo: 
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+### 1.3.1 Kaggle
 
-```{r}
-plot(cars)
-```
+### 1.3.2 StackOverflow
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+StackOverflow es un Q&A de programación en la que los usuarios crean post con dudas (y otros resuelven dichas dudas) en mucho lenguajes de programación, incluido R. Por ejemplo, a continuación se muestra un hilo de StackOverflow con dudas sobre como contar el número de missings en un DataFrame en R:
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+https://stackoverflow.com/questions/26266362/how-to-count-the-nan-values-in-a-column-in-pandas-dataframe
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+En general, la mayoría de dudas que puedan surgir están ya resueltas en StackOverflow, solamente hace falta buscar con un poco de paciencia. Sin embargo, también podeis abrir una cuenta (es gratis!!) y postear vuestras propias dudas.

@@ -1,26 +1,222 @@
 ---
-title: "4. Modelización"
-output: html_notebook
+title: "4. ModelizaciÃ³n"
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 
-## 4.1 Selección de muestras de train y test
-
-## 4.2 Entrenar un modelo y hacer predicciones
-
-## 4.3 Validación de un modelo y cross-validation
-
-## 4.4 Optimización de parámetros y grid search
-
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
 ```{r}
-plot(cars)
+houses_train <- read.csv("data/houses_train.csv")
+
+set.seed(1234)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+## 4.1 Feature engineering
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+Por feature engineering se conoce al proceso de modificar los features existentes o crear nuevos para mejorar el modelo. Diversas técnicas de feature engineering son:
+
+### 4.1.1 Tratado de missings
+
+Por norma general, los modelos no aceptan que alguno de los features tengan valores missing, por lo que es necesario asignar un valor a aquellas observaciones que tienen una variable missing.
+
+Para empezar, vamos a rellenar los valores missing de los features numéricos con la media de dicho feature:
+
+```{r}
+numeric_features <- colnames(Filter(is.numeric, houses_train))
+
+for (feat in numeric_features){
+  houses_train[is.na(houses_train[, feat]), feat] <- mean(houses_train[, feat])
+}
+
+```
+
+Para los features categóricos, se añadirá una nueva categoría llamada "NA":
+
+```{r}
+categorical_features <- setdiff(colnames(houses_train), numeric_features)
+
+for (feat in categorical_features){
+  # en primer lugar, añadimos el level "NA" a los factores del data frame
+  if (!("NA" %in% levels(houses_train[, feat]))){
+    houses_train[, feat] <- factor(houses_train[, feat], levels = c(levels(houses_train[, feat]), "NA"))
+  }
+  # en segundo lugar, añadimos el "NA" a los valores que sean missing
+  houses_train[is.na(houses_train[, feat]), feat] <- "NA"
+}
+
+```
+
+### 4.1.2 Variables categóricas: One-hot encoding
+
+Además del tratado de missings, otro paso necesario antes de modelizar es el tratado de las variables categóricas.
+
+Una variable categórica es aquella que, como su propio nombre indica, categoriza una observación en una de múltiples categorías. Ejemplos de variables categóricas pueden ser variables del tipo "Si / No", variables cualitativas (por ejemplo, "Malo / Normal / Bueno") o tipos de producto ("P. Hipotecario / P. Personal / Otros").
+
+En general, para determinar si una variable se debe tratar como categórica o como numérica puede ser de utilidad preguntarse si existe una "ordenación" en las categorías que describen la variable. En los ejemplos anteriores, mientras que en las variables "Si / No" y tipo de producto no existe ordenación y son variables claramente categóricas, en variables tipo "Malo / Normal / Bueno" puede existir cierta ordenación y puede ser útil tratarlas como numéricas o categóricas según el caso.
+
+Por normal general, los modelos no tratan automáticamente las variables categóricas (que en R tendrán un tipo de variable `factor` o `char`), por lo que es necesario "traducirlas" al único tipo de variable que si que pueden tratar: variables numéricas. La técnica que se utiliza para ello es conocida como one-hot ecoding.
+
+One-hot encoding consiste en pasar una variable con N categorías a N variables cuyo valor puede ser 1 o 0, donde la nueva variable X vale 1 si dicha observación pertenece a la categoría X y 0 en cualquier otro caso. El ejemplo siguiente ilustra este proceso, donde la variable *Food Name* (que contiene 3 categorías) se transforma en 3 nuevas variables que valen 0 o 1 según la categoría de la variable *Food Name* original:
+
+![One-hot encoding](img/one_hot_encoding.jpg)
+
+```{r}
+library(caret)
+
+dmy <- dummyVars(" ~ .", data = houses_train)
+houses_train <- data.frame(predict(dmy, newdata = houses_train))
+```
+
+
+```{r}
+houses_train <- houses_train[complete.cases(houses_train),]
+```
+
+## 4.2 Modelización
+
+Una vez se ha tratado los datos de manera que se puedan usar en un modelo, se empieza el proceso de modelización. En primer lugar, se carga `caret`, un package que egloba diversos modelos y permtite trabajar con ellos mediante una interfaz única:
+
+### 4.2.1 Selección de muestras de train y test/validation
+
+El objetivo de este punto es obtener una muestra de test/validación. La muestra de validación nos permite tener un subconjunto de los datos para los que conocemos la variable a predecir. Esta muestra de validación **no se utilizará para entrenar el modelo**, solamente se utilizará para evaluar su desempeño.
+
+El package `caret` tiene una función muy útil para partir un conjunto de datos en train y validación, de manera que la varaible a predecir tenga una distribución similar tanto en el train como en el conjunto de validación:
+
+```{r}
+inTrain <- createDataPartition(houses_train$SalePrice, p = 0.75, list = F)
+```
+
+Así, para acceder a las muestras de train y validación, se puede usar la lista anterior:
+
+```{r message = FALSE, warning = FALSE, results = 'hide'}
+# muestra de train
+houses_train[inTrain, ]
+
+# muestra de test
+houses_train[-inTrain, ]
+```
+
+
+
+### 4.2 Entrenar un modelo y hacer predicciones
+
+Una vez se tiene la muestra de trian y la de validación, se puede entrenar el modelo. `caret` proporciona una función, `train()` que permite entrenar distintos tipos de modelos. A continuación, se usará la función `train()` para entrenar un modelo XGBoost:
+
+```{r}
+# seleccionamos los features con los que se va ha hacer predicciones: todos menos Id y SalePrice (este es el target que queremos predecir)
+features_prediccion <- setdiff(colnames(houses_train), c("SalePrice", "Id"))
+
+xgb_model <- train(x = houses_train[inTrain, features_prediccion],
+                   y = houses_train[inTrain, "SalePrice"],
+                   method = "xgbTree",
+                   metric = "RMSE")
+```
+
+Una vez tenemos el modelo entrenado, vamos a realizar predicciones con el. En primer lugar, vamos a ver qué predicciones hace nuestro modelo con la muestra de validación. Esto nos servirá para evaluar la bondad del modelo.
+
+Para hacer predicciones, usamos la función `predict()` de `caret`, pasando como parámetro el modelo entrenado y en el parámetro `newdata` el data frame con la muestra de validación:
+
+```{r}
+val_prediction <- predict(xgb_model,
+                          newdata = houses_train[-inTrain, features_prediccion])
+```
+
+
+Ahora que tenemos la predicción del modelo para la muestra de validación, podemos compararla con los valores reales de la muestra de validación para evaluar el modelo. Para ello, utilizaremos la función `rmse()`, que calcula el Root Mean Squared Error. Esta es una métrica bastante común para evaluar modelos de variables contínuas, y se calcula así:
+
+```{r message = FALSE, warning = FALSE}
+library(Metrics)
+
+error <- rmse(actual = houses_train[-inTrain, "SalePrice"],
+              predicted = val_prediction)
+print(error)
+```
+
+Ahora que tenemos el valor del error entre las predicciones de nuestro modelo y los valores reales para una muestra de validación, vamos a intentar mejorar nuestro modelo y bajar el valor del error (hay que tener en cuenta que, para otras métricas de evaluación como "accuracy" o "AUC ROC", el objetivo debe ser aumentar la métrica, no reducirla)
+
+Para conseguir mejorar el modelo, uno de los primeros pasos debe ser optimizar los parámetros del modelo. En el siguiente apartado se verá como optimizar los parámetros de nuestro modelo.
+
+### 4.3 Optimización de parámetros y grid search
+
+En este apartado, mejoraremos el resultado del modelo optimizando los parámetros del mismo. En primer lugar, vamos a analizar qué parámetros se han elegido por defecto. Para ello, aplicamos la función `print()` sobre el modelo, lo que nos dará  un resumen del proceso de entrenamiento del modelo:
+
+```{r}
+print(xgb_model)
+```
+
+El primer dato que debemos analizar en estos resultados es el método de resampling para evaluar el modelo. Si analizamos la información anterior, vemos el mensaje "Resampling: Bootstrapped (25 reps)". Esto nos indica que el método usado ha sido bootstraping. En general, existen dos métodos de resampling para evaluar modelos cuando se hace grid search:
+
+* **Bootstrap**: consiste en crear n muestras similares a la muestra original, y calcular las métricas para estas n muestras. Para ello, las nuevas muestras se construyen seleccionando observaciones aleatorias de la muestra original, con reemplazo (una observación puede ser seleccionada más de una vez). Cuando se tienen las n muestras y las n métricas, se calcula una métrica resumen (por ejemplo, la media de las n métricas)
+
+![Bootstrap](img/bootstrap.png)
+
+* **Cross-validation**: cross-validation consiste en partir la muestra de train original en n "folds". Una vez se han realizado las particiones, se entrena el modelo con n-1 "folds" y se testea el modelo con la "fold" restante. Este proceso se repite n veces hasta que se obtienen n métricas distintas, una para cada una de las "folds" originales. Finalemente, se calcula una métrica global (por ejemplo, la media de las n métricas anteriores). De esta forma, se minimiza el efecto del overfitting en la métrica de validación, ya que la "fold" con las que se calculan las métricas no se han incluido en el entrenamiento del modelo.
+
+![Cross-validation](img/cross_validation.png)
+
+Como hemos visto anteriormente, el método de resampling utilizado por defecto era Bootstrapping. Ahora, vamos a cambiar el método a Cross-validation, y elegir el número de folds que queremos usar (a más folds, más fiable la métrica final, pero más tiempo de computación).
+
+Para cambiar estos parámetros en el proceso de train del modelo, se utiliza la función `trainControl` de `caret`. Esta función devuelve una lista, que a su vez pasaremos como parámetro `trControl` de la función `train` a la hora de entrenar el modelo. En este ejemplo, vamos a determinar que el método de resampling sea cross-validation, y vamos a elegir realizar 5 folds:
+
+```{r}
+train_control <- trainControl(method = "cv",
+                              number = 5)
+```
+
+Aunque no es estrictamente necesario en este punto, podemos volver a entrenar el modelo y revisar los resultados para comprobar que el método de resampling para evaluar el modelo ha cambiado a cross-validation:
+
+```{r}
+xgb_model <- train(x = houses_train[inTrain, features_prediccion],
+                   y = houses_train[inTrain, "SalePrice"],
+                   method = "xgbTree",
+                   metric = "RMSE",
+                   trControl = train_control) # Aquí es donde pasamos nuestra variable train_control para cambiar como
+                                              # se realiza el resampling
+
+print(xgb_model)
+```
+
+Como se puede ver, el método de resampling ha cambiado a "Cross-validated (5 folds)", tal y como queríamos. Ahora, el siguiente paso es elegir los parámetros óptimos del modelo. Para ello, observamos la tabla que aparece en la información anterior del modelo. En ella, se ven las diferentes combinaciones de parámetros con los que se ha entrenado el modelo, y el resultado de dichos parámetros (concretamente, vemos 3 métricas: Root-Mean Squared Error, R-squared y Mean Absolute Error). Al final de la tabla vemos dos mensajes: 1) que RMSE es la métrica utilizada para elegir el mejor modelo y 2) los parámetros que corresponden al valor mínimo del error, que son los utilizados para el modelo final.
+
+Ahora, vamos a cambiar estos parámetros para utilizar los que nosotros queramos y mejorar el modelo (raramente los parámetros que utiliza `caret` por defecto son los óptimos). Para ello, en primer lugar, necesitamos un `data frame` en el que las columnas serán los parámetros a optimizar, y las filas las distintas combinaciones de estos parámetros.
+
+En este ejemplo, vamos a optimizar el parámetro de número de árboles `nrounds` y el learning rate `eta`. Para el número de árboles utilizaremos los parámetros de 250, 500 y 1.000 árboles, y para el learning rate los siguientes parámetros: 0.1, 0.25 y 0.5.
+
+Pero, espera ... ¿tenemos que crear las 9 combinaciones (3x3) para los dos parámetros anteriores a mano? ¿Y que pasa si en vez de 3 valores por parámetro queremos 10, hay que hacer 100 combinaciones A MANO? No, la función `expand.grid()` de R crea estas combinaciones por nosotros. Vemos el ejemplo anterior:
+
+```{r}
+tune_grid <- expand.grid(nrounds = c(250, 500, 1000),
+                         max_depth = 2,
+                         eta = c(0.1, 0.25, 0.5),
+                         gamma = 0,
+                         colsample_bytree = 0.6,
+                         min_child_weight = 1,
+                         subsample = 1)
+```
+
+Bien, ya tenemos la "grid" de parámetros sobre la que vamos a buscar el modelo óptimo. Ahora, pasamos esta "grid" al parámetro `tuneGrid` de la función `train()`:
+
+```{r}
+xgb_model <- train(x = houses_train[inTrain, features_prediccion],
+                   y = houses_train[inTrain, "SalePrice"],
+                   method = "xgbTree",
+                   metric = "RMSE",
+                   trControl = train_control,
+                   tuneGrid = tune_grid) # Aquí es donde pasamos la grid sobre la que vamos a testear los parámetros
+
+print(xgb_model)
+```
+
+Vemos que, efectivamente, el modelo se ha testeado con los parámetros que hemos pasado en la "tune grid", y que el RMSE del modelo ha bajado considerablemente. Validamos este modelo con los nuevos parámetros con la muestra de validación, para ver que si realmente mejora nuestro modelo:
+
+```{r}
+val_prediction <- predict(xgb_model,
+                          newdata = houses_train[-inTrain, features_prediccion])
+
+error <- rmse(actual = houses_train[-inTrain, "SalePrice"],
+              predicted = val_prediction)
+print(error)
+```
+
+Efectivamente, el modelo ha mejorado. Con esto, acaba el tutorial sobre como entrenar un modelo, predecir con un modelo entrenado y tunear el modelo para obtener los parámetros óptimos. Sin embargo, se puede seguir optimizando los parámetros de este modelo (solamente hemos probado 2 parámetros), probar diferentes valores para las n "folds" de cross-validation, etc ...

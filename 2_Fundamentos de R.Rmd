@@ -1,28 +1,178 @@
 ---
 title: "2. Fundamentos de R"
-output: html_notebook
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 
 ## 2.1 Variables y tipos de variable
 
+En R, a diferencia de otros lenguajes de programación, no es necesario inicializar las variables antes de usarlas. Así, para crear una variable llamada `var` en la que se guarde el valor `2`, simplemente se le asigna un valor con el operador `<-`:
+
+```{r}
+var <- 2
+print(var)
+```
+
+En R existen distintos tipos de datos y, por lo tanto, distintos tipos de variables. A continuación se muestran dichos tipos de datos y como comprobar el tipo de dato que tiene almacenado una variable.
+
+### 2.1.1 Numérico
+
+### 2.1.2 Vectores
+
+### 2.1.3 Cadenas de texto (chars)
+
+```{r}
+char_var <- "hola"
+is.character(char_var)
+```
+
+
+
 ## 2.2 Estructuras de control de flujo
+
+A continuación se detallan las principales estructuras de control de flujo en R: instrucciones que nos permiten realizar ciertas acciones cuando se cumple una condición.
+
+### 2.2.1 If's
+
+Los `If statements` sirven para ejecutar ciertas operaciones según si se cumplen determinadas condiciones. Un `If statement` cuenta con los siguientes elementos: 
+
+* **If**: elemento obligatorio, marca la sentencia a ejecutar si se cumple una condición. La condición a evaluar se marca entre paréntesis a continuación del `If`, y la sentencia a ejecutar entr `{}`.
+* **Else If**: elemento opcional. Si la sentencia inicial no se ejecuta, podemos añadir nuevas condiciones a evaluar mediante `Else If`. La sintaxis es igual que la de la sentencia `If`. Es importante destacar que esta sentencia solamente se ejecutará si las sentencias `If` o `Else If` anteriores no se han ejecutado.
+* **Else**: elemento opcional. Última sentencia del bloque `If`, se ejecutará solamente si no se ha ejecutado ninguna de las sentencias `If` o `Else If` anteriores no se han ejecutado. Esta sentencia no tiene una condición a evaluar, solamente un bloque entre `{}`.
+
+Vemos un ejemplo que evalua los divisores de una variable:
+
+```{r}
+number <- 6
+
+if (number %% 2 == 0){
+  print(paste("El número ", number, " es divisible entre 2"))
+} else if (number %% 3 == 0){
+  print(paste("El número ", number, " es divisible entre 3 y no es divisible entre 2"))
+}  else {
+  print(paste("El número ", number, " no es divisible entre 2 ni entre 3"))
+}
+```
+
+
+### 2.2.2 For's
+
+Los bucles `for` nos permiten realizar una acción un número finito de veces. Los bucles `for` constan de los siguientes elementos:
+
+* **índice**: una variable que toma los distintios valores para cada repetición del bucle `for`
+* **valores**: un vector que contiene los distintos valores que debe tomar el índice. El bucle `for` se repetirá una vez para cada valor del vector de valores
+* **instrucción**: instrucciones que se repetirán para cada iteración del bucle. Las instrucciones a ejecutar se incluyen entre `{}`
+
+Vemos un ejemplo que hace `print()` de los 10 primeros número naturales:
+
+```{r}
+valores <- seq(1, 10)
+
+for(indice in valores){
+  print(indice)
+} 
+```
+
+Es importante destacar que el vector de valores puede contener ditintos tipos de varaibles, no únicamente números. Por ejemplo, en el siguiente bucle si hará `print()` de letras, no de números:
+
+```{r}
+valores <- c("A", "E", "I", "O", "U")
+
+for(indice in valores){
+  print(indice)
+} 
+```
+
+### 2.2.3 While's
+
+El bucle `while` permite ejecutar una condición un número finito o infinito de veces, siempre que se cumpla una condición. El bucle `while` tiene dos elementos:
+
+* **condición**: sentencia que se evaluará en cada iteración del bucle. Si la expresión es cierta, el bucle se ejecutará otra vez, si no, el bucle dejará de ejecutarse. Esta expresión va entre paréntesis.
+* **expresión**: sentencia que se ejecutará en cada iteración del bucle `while`. Esta sentencia va entre `{}`
+
+En el siguiente ejemplo, se asigna un valor `1` a una variable. Luego, en un bucle `while`, se le asigna un nuevo valor entre `1` y `10` y se hace `print()` de la variable. Esta sentencia se repite hasta que la variable vale `10`.
+
+```{r}
+var <- 1
+
+while(var < 10){
+  var <- ceiling(runif(1, 0, 10))
+  print(var)
+} 
+
+```
+
 
 ## 2.3 Funciones
 
-## 2.4 Data frames
+## 2.4 Packages
 
-## 2.5 Packages
+Los packages son cojuntos de funciones (y más, en algunos casos pueden incluir data frames y otros objetos), normalmente relacionados con una temática: por ejemplo, existen packages para manejo de data frames, packages con herramientas gráficas, de modelización, etc.
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+El primer paso **para poder utilizar un package es instalarlo**. Por defecto, R viene instalado con un cojunto de packages, pero es muy probable que necesitemos instalar nuevos packages para ampliar las funcionalidades por defecto. Para instalar un package, se utiliza la función `install.packages()`. En este caso, instalaremos el package `pacman`:
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
-```{r}
-plot(cars)
+```{r message = FALSE, warning = FALSE, results = 'hide'}
+install.packages("pacman")
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+Otra manera de instalar packages es mediante la funcionalidad que proporciona R Studio. Para ello, se selecciona *Install* en la ventana *Packages* de R Studio, y se selecciona el package a instalar en la ventana emergente que aparece:
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+![Instalar packages](img/install_packages_1.png)
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+![Instalar packages](img/install_packages_2.png)
+
+Una vez instalado el package, **es necesario cargarlo** en nuestra sesión de trabajo para poder usarlo. Así como la instalación de packages es común para todas las sesiones de trabajo (solamente es necesario instalar un package una vez), es necesario cargar los packages en cada sesión de trabajo. Para cargar un package, se utiliza la función `library()`:
+
+```{r}
+library("pacman")
+```
+
+Sabremos que el package se ha cargado correctamente porque en la pestaña *Packages* de R Studio, el package en cuestión aparece marcado con un *tick*, como se muestra en la siguiente imagen:
+
+![Package cargado](img/cargar_packages.png)
+
+### 2.4.1 Manejo de packages: pacman
+
+En el apartado anterior se ha mostrado como instalar y cargar para su utilización el package `pacman`. La elección de este package para el ejemplo no es casualidad: `pacman`es un package que permite gestionar de forma fácil (o al menos, más fácil que la opción por defecto) el resto de packages.
+
+Para **cargar packages** con `pacman`, se utiliza la función `p_load()`y se pasa a la función los nombres de los packages. Esta función gestiona todo el proceso de carga del package: comprueba si está instalado, y en caso que no lo esté, instala el package antes de cargarlo, evitando errores. Así, para instalar y cargar dos de los packages que necesitaremos para modelizar (`ggplot2` para gráficos y `caret` para modelos), se usa:
+
+```{r message = FALSE, warning = FALSE, results = 'hide'}
+p_load(ggplot2, caret)
+```
+
+Para actualizar todos los packages a la versión más reciente, se usa la función `p_update()`:
+
+```{r message = FALSE, warning = FALSE, results = 'hide'}
+p_update()
+```
+
+`pacman` tiene **otras funciones** muy útiles para el manejo de packages (por ejemplo, instalar temporalmente un package) que se pueden consultar en el siguiente link: https://cran.r-project.org/web/packages/pacman/vignettes/Introduction_to_pacman.html
+
+<!--
+## 2.5 Data frames
+
+En el curso se utilizaran data frames de dos competiciones de Kaggle:
+
+* **House Prices: Advanced regression techniques** https://www.kaggle.com/c/house-prices-advanced-regression-techniques : el objetivo de esta competición es predecir el valor de venta de propiedades a partir de características como la superfície o el año de venta
+
+* **Titanic: Machine Learning from Disaster** https://www.kaggle.com/c/titanic : predecir supervivencia / no supervivencia al accidente del Titanic, en base a características como la edad o la tarifa del viaje
+
+Para importar datos en formato csv, se utiliza la función ***read.csv()***. Los principales parámetros que hay que pasar a la función son los siguientes:
+
+* **file**: ruta del archivo csv
+* **sep** (opcional): simbolo de separación de campos. Por defecto, la separación es una coma ,, en caso que nuestros datos tengan un formato diferente (por ejemplo, separados por ;), deberemos pasar este parámetro
+* **dec** (opcional): simbolo de separación de miles. Por defecto, se utiliza el punto ., en caso que los datos utilicen la coma ,, deberemos pasar este parámetro
+
+```{r warning = FALSE}
+houses_train <- read.csv(file = "data/houses_train.csv", sep = ",", dec = ".")
+head(houses_train)
+```
+
+En primer lugar, podemos estudiar las dimensiones que tiene el dataframe. Las funciones ***nrow()*** y ***ncol()*** devuelven el número de filas y de columnas respectivamente de un data frame:
+
+```{r}
+print(paste("Data frame con ", nrow(houses_train), " filas y ", ncol(houses_train), " columnas"))
+```
+-->

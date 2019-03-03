@@ -1,18 +1,90 @@
 ---
-title: "3. Visualización de datos"
-output: html_notebook
+title: "3. Exploratory Data Analysis"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+Uno de los pasos más importantes a la hora de modelizar es el Exploratory Data Analysis (EDA), es decir, analizar los datos disponibles para entender el problema a modelizar, la distribución de las diferentes vaiables y la relación con la variable a predecir, etc. Esto nos permitirá realizar mejores modelos, creando nuevos features que describan mejor el problema o eliminando outliers que puedan crear ruido, entre otras opciones.
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+## 3.1 Visualización de datos
 
-```{r}
-plot(cars)
+Para realizar EDA, una de las herramientas principales es la visualización de datos. R cuenta con una librería muy potente para realizar multitud de gráficos: `ggplot2`. En la primera parte de este apartdado del curso se verá las principales funciones para crear gráficos en R.
+
+En primer lugar, es necesario cargar el package de `ggplot2`:
+
+```{r message = FALSE, warning = FALSE, results = 'hide'}
+library(ggplot2)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+También cargamos el dataset de precios de viviendas, ya que es el que utilizaremos en los ejemplos de los gráficos:
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+```{r}
+houses_train <- read.csv("data/houses_train.csv")
+```
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+`ggplot2` utiliza el concepto desarrollado en el libro *The Grammar of Graphics* para crear las visualizaciones de datos. En resumen, se podría decir que el concepto de *Grammar of Graphics* consiste en crear los gráficos añadiendo diversos componentes al gráfico siguiendo una "gramática", es decir, con unas reglas respecto a que hará cada componente. Se verá más claro con un ejemplo.
+
+### 3.1.1 Paso 1: crear la base del gráfico
+
+En el primer paso, se crea la base del gráfico, sobre el que se añadiran los distintos elementos. Para ello, se usa la función `ggplot()`. Esta función toma dos argumentos:
+
+* **data**: en este argumento se pasa el dataframe que contiene los datos que queremos dibujar
+* **aes**:  este argumento es el resultado de la función `aes()` de `ggplot2`. A la función `aes()` le pasaremos distintos argumentos que determinarán el resultado del gráfico. De momento, solamente le pasaremos el nombre de los campos que queremod dibujar en el eje x y en el eje y.
+
+En este caso, para dibujar la relación ente la superfície de la vivienda y el precio de venta, se haría:
+
+```{r}
+ggplot(data = houses_train,
+       aes(x = GrLivArea, 
+           y = SalePrice)) # Importante: las referencias a los ejes X e Y no se ecriben entre comillas
+```
+
+¿Qué ...? No se ve nada ... Bueno, era de esperar. En este primer paso, solamente hemos creado la base del gráfico, y ahora añadiremos "capas" al gráfico para poder visualizar los datos. Por comodidad, se puede tener en cuenta que la función `ggplot()` que hemos utilizado antes devuelve las caractarísticas del gráfico que hemos definido, por lo que podemos guardar este resultado en una variable para usarlos más adelante. Esto aplica a todas las funciones de `ggplot2` que utilizaremos más adelante:
+
+```{r}
+base_plot <- ggplot(data = houses_train,
+                    aes(x = GrLivArea, 
+                        y = SalePrice))
+```
+
+Una vez asignado a una variable, se puede ver hacer referencia a la varaible para visualizar y modificar el gráfico:
+
+```{r}
+base_plot
+```
+
+### 3.1.2 Paso 2: Añadir elementos al gráfico
+
+Es el momento de empezar a visualizar los datos. Tanto `GrLivArea` com `SalePrice` son variables continuas, por lo que para ver su relación puede ser útil dibujar un *scatter plot*, es decir, los puntos con las combinaciones de ambos valores. Consultando el *cheatsheet* al que se ha hecho referencia anteriormente, se ve que la geometría que necesitamos es `geom_point()`:
+
+```{r}
+scatter_plot <- base_plot + geom_point()
+scatter_plot
+```
+
+Tambien se puede modificar el aspecto de la geometría que se añade al gráfico, pasando los parámetros correspondientes:
+
+```{r}
+scatter_plot <- base_plot + geom_point(color = "blue", fill = "lightblue", shape = 21)
+scatter_plot
+```
+
+### 3.1.3 Paso 3: Últimos detalles al gráfico
+
+Como se ha comentado anteriormente, en `gglpot2` se van añadiendo elementos al gráfico hasta obtener el resultado deseado. Siguiendo este principio, se van a añadir elementos para acabar de dar el formato deseado al gráfico anterior. En este caso, se va a añadir un título y subtítulo al gráfico, y se va a cambiar la etiqueta de los ejes x e y:
+
+```{r}
+title_plot <- ggtitle("Precio de venta vs. Área",
+                      subtitle = "Relación entre el precio de venta y el área de la vivienda")
+
+x_label <- xlab("Área de la vivienda")
+y_label <- ylab("Precio de venta")
+
+scatter_plot <- scatter_plot + title_plot + x_label + y_label
+scatter_plot
+```
+
